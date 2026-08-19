@@ -107,6 +107,7 @@ export default function Register() {
         setIsSubmitting(true);
 
         try {
+            const apiBase = '';
             const formDataToSend = new FormData();
             formDataToSend.append('name', name);
             formDataToSend.append('instagramUsername', instagramUsername);

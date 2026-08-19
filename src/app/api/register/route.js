@@ -66,11 +66,12 @@ export async function POST(request) {
             if (missingVars.length > 0) {
                 console.error(`[SMTP configuration missing] Missing required SMTP environment variables for inquiry: ${missingVars.join(', ')}`);
                 return NextResponse.json({
-                    success: false,
-                    error: `Inquiry details stored, but email notifications failed to send. Missing configuration variables: ${missingVars.join(', ')}`,
-                    registration
+                    success: true,
+                    registration,
+                    emailSent: false,
+                    warning: `Inquiry details stored, but email notifications failed to send. Missing configuration variables: ${missingVars.join(', ')}`
                 }, {
-                    status: 500,
+                    status: 201,
                     headers: corsHeaders
                 });
             }
@@ -84,19 +85,26 @@ export async function POST(request) {
                     throw new Error('SMTP connection or verification failure detected for admin notification email');
                 }
                 console.log('Email sent successfully');
+                return NextResponse.json({
+                    success: true,
+                    registration,
+                    emailSent: true
+                }, {
+                    status: 201,
+                    headers: corsHeaders
+                });
             } catch (emailErr) {
                 console.error('Email sending failed securely:', emailErr);
                 return NextResponse.json({
-                    success: false,
-                    error: `Inquiry details stored, but email notifications failed to send. Error: ${emailErr.message || 'SMTP service error'}`,
-                    registration
+                    success: true,
+                    registration,
+                    emailSent: false,
+                    warning: `Inquiry details stored, but email notifications failed to send. Error: ${emailErr.message || 'SMTP service error'}`
                 }, {
-                    status: 500,
+                    status: 201,
                     headers: corsHeaders
                 });
             }
-
-            return NextResponse.json({ success: true, registration }, { status: 201, headers: corsHeaders });
         }
 
         // Original registration flow
@@ -204,11 +212,12 @@ export async function POST(request) {
         if (missingVars.length > 0) {
             console.error(`[SMTP configuration missing] Missing required SMTP environment variables for registration: ${missingVars.join(', ')}`);
             return NextResponse.json({
-                success: false,
-                error: `Registration details stored, but email notifications failed to send. Missing configuration variables: ${missingVars.join(', ')}`,
-                registration
+                success: true,
+                registration,
+                emailSent: false,
+                warning: `Registration details stored, but email notifications failed to send. Missing configuration variables: ${missingVars.join(', ')}`
             }, {
-                status: 500,
+                status: 201,
                 headers: corsHeaders
             });
         }
@@ -219,31 +228,43 @@ export async function POST(request) {
             const baseUrl = `${protocol}://${host}`;
 
             const adminSuccess = await sendAdminNotificationEmail(registration, baseUrl);
-            if (!adminSuccess) {
-                throw new Error('SMTP admin notification mail failure');
-            }
-
             const candidateSuccess = await sendCandidateRegistrationEmail(registration, baseUrl);
-            if (!candidateSuccess) {
-                throw new Error('SMTP candidate registration mail failure');
+
+            if (!adminSuccess || !candidateSuccess) {
+                console.error(`[SMTP dispatch warning] Email dispatch failed/partially failed. Admin sent: ${adminSuccess}, Candidate sent: ${candidateSuccess}`);
+                return NextResponse.json({
+                    success: true,
+                    registration,
+                    emailSent: false,
+                    warning: 'Registration saved, but one or more email notifications failed to send. Check SMTP connection.'
+                }, {
+                    status: 201,
+                    headers: corsHeaders
+                });
             }
 
             console.log('Emails sent successfully');
+            return NextResponse.json({ success: true, registration, emailSent: true }, { status: 201, headers: corsHeaders });
         } catch (emailErr) {
             console.error('Secure email sending failed:', emailErr);
             return NextResponse.json({
-                success: false,
-                error: `Registration details stored, but email notifications failed to send. Error: ${emailErr.message || 'SMTP service error'}. Please check configurations or try again.`,
-                registration
+                success: true,
+                registration,
+                emailSent: false,
+                warning: `Registration details stored, but email notifications failed to send. Error: ${emailErr.message || 'SMTP service error'}. Please check configurations or try again.`
             }, {
-                status: 500,
+                status: 201,
                 headers: corsHeaders
             });
         }
-
-        return NextResponse.json({ success: true, registration }, { status: 201, headers: corsHeaders });
     } catch (error) {
         console.error('API Register error:', error);
-        return NextResponse.json({ error: 'An error occurred during registration creation.' }, { status: 500, headers: corsHeaders });
+        return NextResponse.json({
+            success: false,
+            error: error.message || 'An error occurred during registration creation.'
+        }, {
+            status: 500,
+            headers: corsHeaders
+        });
     }
 }
