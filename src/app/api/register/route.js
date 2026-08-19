@@ -55,18 +55,45 @@ export async function POST(request) {
             // Log "Registration processed successfully"
             console.log('Registration processed successfully');
 
+            const missingVars = [];
+            if (!process.env.SMTP_HOST) missingVars.push('SMTP_HOST');
+            if (!process.env.SMTP_PORT) missingVars.push('SMTP_PORT');
+            if (!process.env.SMTP_USER) missingVars.push('SMTP_USER');
+            if (!process.env.SMTP_PASS) missingVars.push('SMTP_PASS');
+            if (!process.env.SMTP_FROM) missingVars.push('SMTP_FROM');
+            if (!process.env.ADMIN_EMAIL) missingVars.push('ADMIN_EMAIL');
+
+            if (missingVars.length > 0) {
+                console.error(`[SMTP configuration missing] Missing required SMTP environment variables for inquiry: ${missingVars.join(', ')}`);
+                return NextResponse.json({
+                    success: false,
+                    error: `Inquiry details stored, but email notifications failed to send. Missing configuration variables: ${missingVars.join(', ')}`,
+                    registration
+                }, {
+                    status: 500,
+                    headers: corsHeaders
+                });
+            }
+
             try {
                 const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
                 const protocol = request.headers.get('x-forwarded-proto') || 'https';
                 const baseUrl = `${protocol}://${host}`;
                 const emailResult = await sendAdminNotificationEmail(registration, baseUrl);
                 if (!emailResult) {
-                    throw new Error('Fallback simulation / SMTP failure detected for admin notification');
+                    throw new Error('SMTP connection or verification failure detected for admin notification email');
                 }
                 console.log('Email sent successfully');
             } catch (emailErr) {
                 console.error('Email sending failed securely:', emailErr);
-                return NextResponse.json({ error: 'Failed to send inquiry email notification.' }, { status: 500, headers: corsHeaders });
+                return NextResponse.json({
+                    success: false,
+                    error: `Inquiry details stored, but email notifications failed to send. Error: ${emailErr.message || 'SMTP service error'}`,
+                    registration
+                }, {
+                    status: 500,
+                    headers: corsHeaders
+                });
             }
 
             return NextResponse.json({ success: true, registration }, { status: 201, headers: corsHeaders });
@@ -166,6 +193,26 @@ export async function POST(request) {
         // Log "Registration processed successfully"
         console.log('Registration processed successfully');
 
+        const missingVars = [];
+        if (!process.env.SMTP_HOST) missingVars.push('SMTP_HOST');
+        if (!process.env.SMTP_PORT) missingVars.push('SMTP_PORT');
+        if (!process.env.SMTP_USER) missingVars.push('SMTP_USER');
+        if (!process.env.SMTP_PASS) missingVars.push('SMTP_PASS');
+        if (!process.env.SMTP_FROM) missingVars.push('SMTP_FROM');
+        if (!process.env.ADMIN_EMAIL) missingVars.push('ADMIN_EMAIL');
+
+        if (missingVars.length > 0) {
+            console.error(`[SMTP configuration missing] Missing required SMTP environment variables for registration: ${missingVars.join(', ')}`);
+            return NextResponse.json({
+                success: false,
+                error: `Registration details stored, but email notifications failed to send. Missing configuration variables: ${missingVars.join(', ')}`,
+                registration
+            }, {
+                status: 500,
+                headers: corsHeaders
+            });
+        }
+
         try {
             const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
             const protocol = request.headers.get('x-forwarded-proto') || 'https';
@@ -185,7 +232,9 @@ export async function POST(request) {
         } catch (emailErr) {
             console.error('Secure email sending failed:', emailErr);
             return NextResponse.json({
-                error: 'Registration details stored, but email notifications failed to send. Please check configurations or try again.'
+                success: false,
+                error: `Registration details stored, but email notifications failed to send. Error: ${emailErr.message || 'SMTP service error'}. Please check configurations or try again.`,
+                registration
             }, {
                 status: 500,
                 headers: corsHeaders

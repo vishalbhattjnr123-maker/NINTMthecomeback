@@ -1430,6 +1430,33 @@
       "createdAt": "2026-08-19T07:17:57.329Z",
       "updatedAt": "2026-08-19T07:17:57.329Z",
       "applicationStatus": "Payment Pending"
+    },
+    {
+      "registrationId": "NINTM-983695",
+      "id": "NINTM-983695",
+      "name": "sunil",
+      "fullName": "sunil",
+      "instagramUsername": "fgdghsdf",
+      "dateOfBirth": "2026-08-04",
+      "dob": "2026-08-04",
+      "email": "boxfy123@gmail.com",
+      "phone": "7018408855",
+      "whatsapp": "7018408855",
+      "height": "175",
+      "state": "Meghalaya",
+      "city": "chandigarh",
+      "pincode": "160014",
+      "fullLengthPhoto": "https://ywqabmsrvzfx6w8w.private.blob.vercel-storage.com/NINTM-983695-fullLength.jpeg",
+      "closeUpPhoto": "https://ywqabmsrvzfx6w8w.private.blob.vercel-storage.com/NINTM-983695-closeUp.jpeg",
+      "paymentStatus": "PENDING",
+      "paymentAmount": 0,
+      "razorpayOrderId": "",
+      "razorpayPaymentId": "",
+      "razorpaySignature": "",
+      "paymentDate": "",
+      "createdAt": "2026-08-19T07:22:47.323Z",
+      "updatedAt": "2026-08-19T07:22:47.323Z",
+      "applicationStatus": "Payment Pending"
     }
   ]
 }
