@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gold-champagne: #C9A24D;
+  --color-gold-metallic: #D4AF37;
+  --color-navy-deep: #081C3A;
+  --color-navy-card: #0B2347;
+  --color-navy-highlight: #102B52;
+  --color-navy-dark: #06162F;
+  --color-rich-red: #8B1E2D;
+  --color-rich-red-bright: #9E2335;
+  --color-text-sec: #D9E1EC;
+
+  --color-luxury-black: #081C3A;
+
+  --font-serif: var(--font-serif), Georgia, serif;
+  --font-sans: var(--font-sans), sans-serif;
+}
+
+:root {
+  --background: #081C3A;
+  --foreground: #FFFFFF;
+}
+
+body {
+  background-color: #081C3A;
+  color: #FFFFFF;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+p {
+  font-size: 16px !important;
+  line-height: 1.75 !important;
+}
+
+/* Custom smooth animations & scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Light styling scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #06162F;
+  border-left: 1px solid #102B52;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #102B52;
+  border-radius: 0px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D4AF37;
+}
+
+/* Luxury keyframe animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-up {
+  animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Premium Light Editorial Glassmorphism */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(184, 144, 63, 0.15);
+}
+
+.glass-panel-hover:hover {
+  background: rgba(250, 248, 243, 0.95);
+  border: 1px solid rgba(184, 144, 63, 0.35);
+  box-shadow: 0px 8px 30px rgba(184, 144, 63, 0.08);
+}
