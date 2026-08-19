@@ -45,8 +45,8 @@ export default function Home() {
 
   const boyStars = [
     { src: "/uploads/man.jpg.jpeg", name: "Aamir" },
-    { src: "/uploads/Jojo.jpeg", name: "Jojo Singh" },
-     { src: "/uploads/Malemodel.jpeg", name: "Aamir" },
+    { src: "/uploads/jojo.jpeg", name: "Jojo Singh" },
+    { src: "/uploads/Malemodel.jpeg", name: "Aamir" },
     { src: "/uploads/Jojo singh.jpeg", name: "Jojo Singh" },
   ];
 
