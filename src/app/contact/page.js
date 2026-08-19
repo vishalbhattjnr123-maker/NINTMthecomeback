@@ -59,7 +59,7 @@ export default function ContactFAQ() {
             formData.append('email', contactData.email.trim());
             formData.append('message', contactData.message.trim());
 
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+            const apiBase = '';
             await fetch(`${apiBase}/api/register`, {
                 method: 'POST',
                 body: formData

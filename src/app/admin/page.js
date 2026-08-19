@@ -54,7 +54,7 @@ export default function AdminPage() {
 
     const fetchRegistrations = () => {
         setLoading(true);
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+        const apiBase = '';
         let query = `${apiBase}/api/admin?search=${searchTerm}&state=${stateFilter}&status=${statusFilter}&paymentStatus=${paymentStatusFilter}`;
         fetch(query)
             .then((res) => res.json())
@@ -78,7 +78,7 @@ export default function AdminPage() {
 
     const handleStatusUpdate = async (id, status) => {
         try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+            const apiBase = '';
             const res = await fetch(`${apiBase}/api/admin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -105,7 +105,7 @@ export default function AdminPage() {
 
     const handleSaveNotes = async (id) => {
         try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+            const apiBase = '';
             const res = await fetch(`${apiBase}/api/admin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -133,7 +133,7 @@ export default function AdminPage() {
     const handleExportCSV = () => {
         if (registrations.length === 0) return;
 
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+        const apiBase = '';
         const photoUrlBase = apiBase || window.location.origin;
 
         const headers = [
@@ -428,7 +428,7 @@ export default function AdminPage() {
                                                 <div>
                                                     <span className="text-[#D9E1EC]/50 block text-[8px] font-bold uppercase mb-1">Full Length</span>
                                                     {selectedCandidate.fullLengthPhoto ? (() => {
-                                                        const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+                                                        const apiBase = '';
                                                         const proxyUrl = `${apiBase || window.location.origin}/api/photo?url=${encodeURIComponent(selectedCandidate.fullLengthPhoto)}`;
                                                         return (
                                                             <a href={proxyUrl} target="_blank" rel="noopener noreferrer" className="block relative aspect-[3/4] w-full border border-[#D4AF37]/25 hover:border-[#D4AF37] transition-all overflow-hidden bg-black/40">
@@ -443,7 +443,7 @@ export default function AdminPage() {
                                                 <div>
                                                     <span className="text-[#D9E1EC]/50 block text-[8px] font-bold uppercase mb-1">Close-Up</span>
                                                     {selectedCandidate.closeUpPhoto ? (() => {
-                                                        const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+                                                        const apiBase = '';
                                                         const proxyUrl = `${apiBase || window.location.origin}/api/photo?url=${encodeURIComponent(selectedCandidate.closeUpPhoto)}`;
                                                         return (
                                                             <a href={proxyUrl} target="_blank" rel="noopener noreferrer" className="block relative aspect-[3/4] w-full border border-[#D4AF37]/25 hover:border-[#D4AF37] transition-all overflow-hidden bg-black/40">

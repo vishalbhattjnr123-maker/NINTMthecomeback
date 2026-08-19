@@ -24,7 +24,7 @@ function SuccessContent() {
             return;
         }
 
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+        const apiBase = '';
         fetch(`${apiBase}/api/admin?search=${regId}`)
             .then((res) => res.json())
             .then((data) => {

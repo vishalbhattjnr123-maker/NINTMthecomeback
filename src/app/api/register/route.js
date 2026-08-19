@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { addRegistration, getRegistrations } from '@/lib/db';
 import { put } from '@vercel/blob';
 import path from 'path';
-import { sendAdminNotificationEmail } from '@/lib/email';
+import { sendAdminNotificationEmail, sendCandidateRegistrationEmail } from '@/lib/email';
 import { getCorsHeaders, handleOptions } from '@/lib/cors';
 
 export async function OPTIONS(request) {
@@ -59,10 +59,14 @@ export async function POST(request) {
                 const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
                 const protocol = request.headers.get('x-forwarded-proto') || 'https';
                 const baseUrl = `${protocol}://${host}`;
-                await sendAdminNotificationEmail(registration, baseUrl);
+                const emailResult = await sendAdminNotificationEmail(registration, baseUrl);
+                if (!emailResult) {
+                    throw new Error('Fallback simulation / SMTP failure detected for admin notification');
+                }
                 console.log('Email sent successfully');
             } catch (emailErr) {
-                console.error('Email sending failed securely:', emailErr.message);
+                console.error('Email sending failed securely:', emailErr);
+                return NextResponse.json({ error: 'Failed to send inquiry email notification.' }, { status: 500, headers: corsHeaders });
             }
 
             return NextResponse.json({ success: true, registration }, { status: 201, headers: corsHeaders });
@@ -166,10 +170,26 @@ export async function POST(request) {
             const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
             const protocol = request.headers.get('x-forwarded-proto') || 'https';
             const baseUrl = `${protocol}://${host}`;
-            await sendAdminNotificationEmail(registration, baseUrl);
-            console.log('Email sent successfully');
+
+            const adminSuccess = await sendAdminNotificationEmail(registration, baseUrl);
+            if (!adminSuccess) {
+                throw new Error('SMTP admin notification mail failure');
+            }
+
+            const candidateSuccess = await sendCandidateRegistrationEmail(registration, baseUrl);
+            if (!candidateSuccess) {
+                throw new Error('SMTP candidate registration mail failure');
+            }
+
+            console.log('Emails sent successfully');
         } catch (emailErr) {
-            console.error('Email sending failed securely:', emailErr.message);
+            console.error('Secure email sending failed:', emailErr);
+            return NextResponse.json({
+                error: 'Registration details stored, but email notifications failed to send. Please check configurations or try again.'
+            }, {
+                status: 500,
+                headers: corsHeaders
+            });
         }
 
         return NextResponse.json({ success: true, registration }, { status: 201, headers: corsHeaders });

@@ -474,3 +474,142 @@ ${textBody}
         return false;
     }
 }
+
+export async function sendCandidateRegistrationEmail(candidate, baseUrl = '') {
+    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+    const smtpFrom = process.env.SMTP_FROM || 'NINTM – The Comeback 2026 <NintmTheComeBack@gmail.com>';
+
+    const formattedDate = new Date(candidate.createdAt || new Date().toISOString()).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+
+    const emailSubject = `NINTM – THE COMEBACK 2026: Registration Received (${candidate.registrationId})`;
+
+    const htmlBody = `
+        <div style="font-family: Arial, sans-serif; background-color: #081C3A; color: #ffffff; padding: 40px; border-radius: 8px; max-width: 600px; margin: 0 auto;">
+            <div style="text-align: center; border-bottom: 2px solid #D4AF37; padding-bottom: 20px; margin-bottom: 30px;">
+                <h1 style="color: #D4AF37; margin: 0; font-size: 26px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase;">NINTM</h1>
+                <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 11px; letter-spacing: 4px; text-transform: uppercase;">THE COMEBACK 2026</p>
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <h2 style="color: #ffffff; font-size: 20px; font-weight: bold; text-transform: uppercase; margin-top: 0;">Registration Received</h2>
+                <p style="color: #D9E1EC; font-size: 14px; line-height: 1.6;">
+                    Hello ${candidate.name},
+                </p>
+                <p style="color: #D9E1EC; font-size: 14px; line-height: 1.6;">
+                    Your registration details for <strong>NINTM &ndash; THE COMEBACK 2026</strong> have been received. Please complete your fee payment to finalize your audition slot.
+                </p>
+            </div>
+
+            <div style="background-color: #0B2347; border: 1px solid #D4AF37; padding: 25px; margin-bottom: 30px;">
+                <h3 style="color: #D4AF37; text-transform: uppercase; font-size: 12px; margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid rgba(212, 175, 55, 0.2); padding-bottom: 8px;">Dossier Summary</h3>
+                <table style="width: 100%; font-size: 13px; color: #D9E1EC; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 6px 0; font-weight: bold; width: 40%;">Registration ID:</td>
+                        <td style="padding: 6px 0; color: #D4AF37; font-family: monospace; font-weight: bold;">${candidate.registrationId}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 0; font-weight: bold;">Name:</td>
+                        <td style="padding: 6px 0; color: #ffffff;">${candidate.name}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 0; font-weight: bold;">Instagram Handle:</td>
+                        <td style="padding: 6px 0; color: #ffffff;">@${candidate.instagramUsername || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 0; font-weight: bold;">Registration Fee:</td>
+                        <td style="padding: 6px 0; color: #ffffff; font-family: monospace;">₹699</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 0; font-weight: bold;">Payment Status:</td>
+                        <td style="padding: 6px 0; color: #eab308; font-weight: bold;">PENDING</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 0; font-weight: bold;">Registration Date:</td>
+                        <td style="padding: 6px 0; color: #ffffff;">${formattedDate}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="border-top: 1px solid rgba(212, 175, 55, 0.2); padding-top: 20px; text-align: center;">
+                <p style="color: #D4AF37; font-size: 13px; font-weight: bold; margin-bottom: 8px;">
+                    Please keep your Registration ID for future communication.
+                </p>
+                <p style="color: #D9E1EC; font-size: 11px; line-height: 1.6; margin: 0;">
+                    Complete your payment checkout if you haven't already. Selected candidates will be contacted for physical auditions once evaluation of all profiles is complete.
+                </p>
+            </div>
+        </div>
+    `;
+
+    const textBody = `
+NINTM – THE COMEBACK 2026
+
+Registration details received!
+
+Registration ID: ${candidate.registrationId}
+Name: ${candidate.name}
+Instagram Handle: @${candidate.instagramUsername || 'N/A'}
+Fee: ₹699
+Payment Status: PENDING
+Registration Date: ${formattedDate}
+
+Please keep your Registration ID for future communication.
+    `;
+
+    if (!smtpUser || !smtpPass) {
+        console.log(`
+=========================================
+[SIMULATED CANDIDATE EMAIL DISPATCH]
+To: ${candidate.email}
+Subject: ${emailSubject}
+-----------------------------------------
+${textBody}
+=========================================
+        `);
+        return true;
+    }
+
+    try {
+        const transporter = nodemailer.createTransport({
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465,
+            auth: {
+                user: smtpUser,
+                pass: smtpPass
+            }
+        });
+
+        await transporter.sendMail({
+            from: smtpFrom,
+            to: candidate.email,
+            subject: emailSubject,
+            text: textBody,
+            html: htmlBody
+        });
+
+        console.log(`Candidate registration confirmation email sent successfully to ${candidate.email}`);
+        return true;
+    } catch (error) {
+        console.error('Error sending candidate registration email via SMTP. Falling back to log print.', error);
+        console.log(`
+=========================================
+[CANDIDATE EMAIL DISPATCH FAILURE FALLBACK LOG]
+To: ${candidate.email}
+Subject: ${emailSubject}
+-----------------------------------------
+${textBody}
+=========================================
+        `);
+        return false;
+    }
+}

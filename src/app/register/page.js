@@ -121,8 +121,7 @@ export default function Register() {
             formDataToSend.append('fullLengthPhoto', photos.fullLength);
             formDataToSend.append('closeUpPhoto', photos.closeUp);
 
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-            const res = await fetch(`${apiBase}/api/register`, {
+            const res = await fetch('/api/register', {
                 method: 'POST',
                 body: formDataToSend
             });
