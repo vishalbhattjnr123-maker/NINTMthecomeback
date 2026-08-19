@@ -1,11 +1,61 @@
 import nodemailer from 'nodemailer';
 
-export async function sendConfirmationEmail(candidate) {
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+function getAndValidateSmtpConfig() {
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpPort = process.env.SMTP_PORT;
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
-    const smtpFrom = process.env.SMTP_FROM || 'NINTM – The Comeback 2026 <NintmTheComeBack@gmail.com>';
+    const smtpFrom = process.env.SMTP_FROM;
+    const adminEmail = process.env.ADMIN_EMAIL;
+
+    const missing = [];
+    if (!smtpHost) missing.push('SMTP_HOST');
+    if (!smtpPort) missing.push('SMTP_PORT');
+    if (!smtpUser) missing.push('SMTP_USER');
+    if (!smtpPass) missing.push('SMTP_PASS');
+    if (!smtpFrom) missing.push('SMTP_FROM');
+    if (!adminEmail) missing.push('ADMIN_EMAIL');
+
+    if (missing.length > 0) {
+        console.error(`[SMTP configuration missing] Missing required SMTP environment variables: ${missing.join(', ')}`);
+        return null;
+    }
+
+    return {
+        host: smtpHost,
+        port: parseInt(smtpPort),
+        user: smtpUser,
+        pass: smtpPass,
+        from: smtpFrom,
+        admin: adminEmail
+    };
+}
+
+async function createSmtpTransporter(config) {
+    try {
+        const transporter = nodemailer.createTransport({
+            host: config.host,
+            port: config.port,
+            secure: config.port === 465,
+            auth: {
+                user: config.user,
+                pass: config.pass
+            },
+            tls: {
+                rejectUnauthorized: false
+            }
+        });
+        await transporter.verify();
+        console.log(`[SMTP connection/authentication success] SMTP handshake verified with ${config.host}:${config.port}`);
+        return transporter;
+    } catch (err) {
+        console.error(`[SMTP connection/authentication failure] Failed to verify connection to ${config.host}:${config.port}:`, err.message);
+        return null;
+    }
+}
+
+export async function sendConfirmationEmail(candidate) {
+    const config = getAndValidateSmtpConfig();
 
     const formattedDate = new Date(candidate.paymentDate || new Date().toISOString()).toLocaleDateString('en-IN', {
         day: '2-digit',
@@ -90,63 +140,39 @@ Payment Status: PAID
 Please keep your Registration ID for future communication.
     `;
 
-    if (!smtpUser || !smtpPass) {
-        console.log(`
-=========================================
-[SIMULATED EMAIL DISPATCH]
-To: ${candidate.email}
-Subject: ${emailSubject}
------------------------------------------
-${textBody}
-=========================================
-        `);
-        return true;
+    if (!config) {
+        return false;
+    }
+
+    const transporter = await createSmtpTransporter(config);
+    if (!transporter) {
+        return false;
     }
 
     try {
-        const transporter = nodemailer.createTransport({
-            host: smtpHost,
-            port: smtpPort,
-            secure: smtpPort === 465,
-            auth: {
-                user: smtpUser,
-                pass: smtpPass
-            }
-        });
-
         await transporter.sendMail({
-            from: smtpFrom,
+            from: config.from,
             to: candidate.email,
             subject: emailSubject,
             text: textBody,
             html: htmlBody
         });
 
-        console.log(`Confirmation email sent successfully to ${candidate.email}`);
+        console.log(`[SMTP email send success] Confirmation email sent successfully to ${candidate.email}`);
         return true;
     } catch (error) {
-        console.error('Error sending confirmation email via SMTP. Falling back to log print.', error);
-        console.log(`
-=========================================
-[EMAIL DISPATCH FAILURE FALLBACK LOG]
-To: ${candidate.email}
-Subject: ${emailSubject}
------------------------------------------
-${textBody}
-=========================================
-        `);
+        console.error(`[SMTP email send failure] Error sending confirmation email to ${candidate.email}:`, error.message);
         return false;
     }
 }
 
 export async function sendAdminNotificationEmail(data, baseUrl = '') {
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpPort = parseInt(process.env.SMTP_PORT || '587');
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
-    const smtpFrom = process.env.SMTP_FROM || 'NintmTheComeBack@gmail.com';
-    const adminEmail = process.env.ADMIN_EMAIL || 'NintmTheComeBack@gmail.com';
+    const config = getAndValidateSmtpConfig();
     const token = process.env.BLOB_READ_WRITE_TOKEN;
+
+    if (!config) {
+        return false;
+    }
 
     const fullLengthPhotoUrl = (baseUrl && data.fullLengthPhoto)
         ? `${baseUrl}/api/photo?url=${encodeURIComponent(data.fullLengthPhoto)}`
@@ -425,62 +451,35 @@ Submitted At: ${formattedDate}
         </div>
     `;
 
-    if (!smtpUser || !smtpPass) {
-        console.log(`
-=========================================
-[SIMULATED ADMIN EMAIL DISPATCH (MISSING SMTP CREDENTIALS)]
-To: ${adminEmail}
-Subject: ${emailSubject}
------------------------------------------
-${textBody}
-=========================================
-        `);
-        return true;
+    const transporter = await createSmtpTransporter(config);
+    if (!transporter) {
+        return false;
     }
 
     try {
-        const transporter = nodemailer.createTransport({
-            host: smtpHost,
-            port: smtpPort,
-            secure: smtpPort === 465,
-            auth: {
-                user: smtpUser,
-                pass: smtpPass
-            }
-        });
-
         await transporter.sendMail({
-            from: smtpFrom,
-            to: adminEmail,
+            from: config.from,
+            to: config.admin,
             subject: emailSubject,
             text: textBody,
             html: htmlBody,
             attachments: attachments
         });
 
-        console.log(`Admin notification email sent successfully to ${adminEmail}`);
+        console.log(`[SMTP email send success] Admin notification email sent successfully to ${config.admin}`);
         return true;
     } catch (error) {
-        console.error('Error sending admin notification email via SMTP. Falling back to log print.', error);
-        console.log(`
-=========================================
-[ADMIN EMAIL DISPATCH FAILURE FALLBACK LOG]
-To: ${adminEmail}
-Subject: ${emailSubject}
------------------------------------------
-${textBody}
-=========================================
-        `);
+        console.error(`[SMTP email send failure] Error sending admin notification email to ${config.admin}:`, error.message);
         return false;
     }
 }
 
 export async function sendCandidateRegistrationEmail(candidate, baseUrl = '') {
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpPort = parseInt(process.env.SMTP_PORT || '587');
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
-    const smtpFrom = process.env.SMTP_FROM || 'NINTM – The Comeback 2026 <NintmTheComeBack@gmail.com>';
+    const config = getAndValidateSmtpConfig();
+
+    if (!config) {
+        return false;
+    }
 
     const formattedDate = new Date(candidate.createdAt || new Date().toISOString()).toLocaleDateString('en-IN', {
         day: '2-digit',
@@ -565,51 +564,25 @@ Registration Date: ${formattedDate}
 Please keep your Registration ID for future communication.
     `;
 
-    if (!smtpUser || !smtpPass) {
-        console.log(`
-=========================================
-[SIMULATED CANDIDATE EMAIL DISPATCH]
-To: ${candidate.email}
-Subject: ${emailSubject}
------------------------------------------
-${textBody}
-=========================================
-        `);
-        return true;
+    const transporter = await createSmtpTransporter(config);
+    if (!transporter) {
+        return false;
     }
 
     try {
-        const transporter = nodemailer.createTransport({
-            host: smtpHost,
-            port: smtpPort,
-            secure: smtpPort === 465,
-            auth: {
-                user: smtpUser,
-                pass: smtpPass
-            }
-        });
-
         await transporter.sendMail({
-            from: smtpFrom,
+            from: config.from,
             to: candidate.email,
             subject: emailSubject,
             text: textBody,
             html: htmlBody
         });
 
-        console.log(`Candidate registration confirmation email sent successfully to ${candidate.email}`);
+        console.log(`[SMTP email send success] Candidate registration confirmation email sent successfully to ${candidate.email}`);
         return true;
     } catch (error) {
-        console.error('Error sending candidate registration email via SMTP. Falling back to log print.', error);
-        console.log(`
-=========================================
-[CANDIDATE EMAIL DISPATCH FAILURE FALLBACK LOG]
-To: ${candidate.email}
-Subject: ${emailSubject}
------------------------------------------
-${textBody}
-=========================================
-        `);
+        console.error(`[SMTP email send failure] Error sending candidate registration email to ${candidate.email}:`, error.message);
         return false;
     }
 }
+
